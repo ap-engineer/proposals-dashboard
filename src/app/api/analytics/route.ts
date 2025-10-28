@@ -1,13 +1,24 @@
-import { listProposals } from "@/lib/proposales"
+import { listProposals, listCompanies } from "@/lib/proposales"
 import { NextResponse } from "next/server"
 
 export async function GET() {
     try {
-        const response = await listProposals()
-        const proposalData = response.data
+        const [proposalsResponse, companiesResponse] = await Promise.all([
+            listProposals(),
+            listCompanies()
+        ])
+        
+        const proposalData = proposalsResponse.data
+        const companiesData = companiesResponse.data || []
         
         // Handle both single proposal and array
         const proposals = proposalData ? (Array.isArray(proposalData) ? proposalData : [proposalData]) : []
+
+        // Create company lookup map
+        const companyMap = new Map()
+        companiesData.forEach((company: any) => {
+            companyMap.set(company.id, company.name || `Company ${company.id}`)
+        })
 
         // Calculate analytics
         const analytics = {
@@ -30,9 +41,11 @@ export async function GET() {
             const status = proposal.status || "unknown"
             analytics.byStatus[status] = (analytics.byStatus[status] || 0) + 1
 
-            // Company distribution
-            const company = proposal.company_name || "Unknown"
-            analytics.byCompany[company] = (analytics.byCompany[company] || 0) + 1
+            // Company distribution - use company_id to lookup name
+            const companyName = proposal.company_id 
+                ? companyMap.get(proposal.company_id) || `Company ${proposal.company_id}`
+                : "Unknown"
+            analytics.byCompany[companyName] = (analytics.byCompany[companyName] || 0) + 1
 
             // Total value
             if (proposal.value_without_tax) {

@@ -67,14 +67,12 @@ const Page = () => {
                 >
                     📚 Content Library
                 </Link>
-                <a
-                    href="/api/webhook"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                <Link
+                    href="/webhooks"
                     className="px-6 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
                 >
-                    🔗 Webhook Status
-                </a>
+                    🔗 Webhooks
+                </Link>
             </div>
 
             {/* Proposals List */}
