@@ -1,7 +1,8 @@
 "use client"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import useSWR from "swr"
 import Link from "next/link"
+import { debounce } from "@/lib/utils"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
@@ -9,6 +10,7 @@ const ContentLibraryPage = () => {
     const { data, error, isLoading } = useSWR("/api/content", fetcher)
     const [filter, setFilter] = useState<"all" | "active" | "archived">("all")
     const [searchQuery, setSearchQuery] = useState("")
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
     const [showGenerator, setShowGenerator] = useState(false)
     const [generatorPrompt, setGeneratorPrompt] = useState("")
     const [generating, setGenerating] = useState(false)
@@ -27,6 +29,19 @@ const ContentLibraryPage = () => {
     const [updating, setUpdating] = useState(false)
     const [updateError, setUpdateError] = useState("")
     const [updateSuccess, setUpdateSuccess] = useState(false)
+
+    // Debounced search handler
+    const debouncedSearch = useMemo(
+        () => debounce((value: string) => {
+            setDebouncedSearchQuery(value)
+        }, 300),
+        []
+    )
+
+    const handleSearchChange = (value: string) => {
+        setSearchQuery(value)
+        debouncedSearch(value)
+    }
 
     if (isLoading) {
         return (
@@ -53,9 +68,9 @@ const ContentLibraryPage = () => {
             filter === "active" ? !item.deactivated_at :
             item.deactivated_at
 
-        const matchesSearch = searchQuery === "" || 
-            (item.title && JSON.stringify(item.title).toLowerCase().includes(searchQuery.toLowerCase())) ||
-            (item.description && JSON.stringify(item.description).toLowerCase().includes(searchQuery.toLowerCase()))
+        const matchesSearch = debouncedSearchQuery === "" || 
+            (item.title && JSON.stringify(item.title).toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
+            (item.description && JSON.stringify(item.description).toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
 
         return matchesFilter && matchesSearch
     })
@@ -89,7 +104,14 @@ const ContentLibraryPage = () => {
     }
 
     const handleEditClick = (item: any) => {
-        setEditingItem(item)
+        // Detect the first available language from title
+        const availableLanguages = typeof item.title === "object" ? Object.keys(item.title) : ["en"]
+        const defaultLanguage = availableLanguages[0] || "en"
+        
+        setEditingItem({
+            ...item,
+            language: defaultLanguage
+        })
         setUpdateError("")
         setUpdateSuccess(false)
     }
@@ -101,22 +123,30 @@ const ContentLibraryPage = () => {
         setUpdateSuccess(false)
 
         try {
+            const language = editingItem.language || "en"
             const title = typeof editingItem.title === "string" 
                 ? editingItem.title 
-                : editingItem.title?.[editingItem.language] || ""
+                : editingItem.title?.[language] || ""
             
             const description = typeof editingItem.description === "string"
                 ? editingItem.description
-                : editingItem.description?.[editingItem.language] || ""
+                : editingItem.description?.[language] || ""
+
+            // Validate title is not empty
+            if (!title || title.trim() === "") {
+                throw new Error("Title is required and cannot be empty")
+            }
 
             const payload: any = {
                 product_id: editingItem.product_id,
                 variation_id: editingItem.variation_id,
-                language: editingItem.language || "en",
-                title: title,
+                language: language,
+                title: title.trim(),
             }
 
-            if (description) payload.description = description
+            if (description && description.trim()) {
+                payload.description = description.trim()
+            }
 
             const response = await fetch("/api/content/update", {
                 method: "PUT",
@@ -213,6 +243,9 @@ const ContentLibraryPage = () => {
             <div className="mb-8">
                 <h1 className="text-4xl font-bold mb-2">Content Library</h1>
                 <p className="text-gray-600">Browse and manage your proposal content and products</p>
+                <p className="text-sm text-gray-500 mt-2">
+                    Note: The v3 API endpoint doesn't return images. Images are available via the web interface.
+                </p>
             </div>
 
             {/* Create Content Form */}
@@ -402,7 +435,7 @@ const ContentLibraryPage = () => {
                             type="text"
                             placeholder="Search content..."
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onChange={(e) => handleSearchChange(e.target.value)}
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                         />
                     </div>
@@ -629,6 +662,9 @@ const ContentLibraryPage = () => {
                                         <option value="de">German</option>
                                         <option value="es">Spanish</option>
                                     </select>
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Available: {typeof editingItem.title === "object" ? Object.keys(editingItem.title).join(", ") : editingItem.language || "en"}
+                                    </p>
                                 </div>
 
                                 <div>

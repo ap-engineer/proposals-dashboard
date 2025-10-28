@@ -86,16 +86,30 @@ src/
 └── types/                 # TypeScript type definitions
 ```
 
-## Key Features Explained
+## API Endpoints
 
-- `GET /api/proposals/list` - Fetch all proposals
-- `GET /api/proposals/[id]` - Fetch a specific proposal by UUID
+### Proposals
+- `GET /api/proposals/list` - List all proposals
+- `GET /api/proposals/[id]` - Get proposal details
+- `POST /api/proposals/create` - Create new proposal
+- `GET /api/proposals/[id]/insights` - AI insights (streaming)
+- `GET /api/proposals/[id]/health-check` - AI quality check
 
-## Environment Variables
+### Content
+- `GET /api/content` - List all content items
+- `POST /api/content/create` - Create content item
+- `PUT /api/content/update` - Update content item
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `PROPOSALES_API_KEY` | Your Proposales API key | Yes |
+### Analytics
+- `GET /api/analytics` - Get proposal analytics
+
+### AI Features
+- `POST /api/ai/generate-proposal` - Generate proposal with AI
+- `POST /api/ai/generate-content` - Generate content ideas with AI
+
+## Known Limitations
+
+- **Content Images**: The Proposales v3 API (`/v3/content`) doesn't return image data. Images are uploaded successfully but only accessible via the web interface at `https://secure.proposales.com/api/content/products` (non-public endpoint).
 
 ## Deploy on Vercel
 
