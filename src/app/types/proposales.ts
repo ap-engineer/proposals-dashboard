@@ -6,6 +6,7 @@ export interface Proposal {
     status?: string;
     created_at?: number; // unix timestamp in seconds
     updated_at?: number;
+    deleted_at?: number;
     company_id?: number;
     company_name?: string;
     company_email?: string;
@@ -13,6 +14,8 @@ export interface Proposal {
     company_address?: string;
     series_uuid?: string;
     version?: number;
+    value_with_tax?: number;
+    value_without_tax?: number;
     data?: Record<string, any>;
 }
 

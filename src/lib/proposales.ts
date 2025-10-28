@@ -1,4 +1,4 @@
-import type { ProposalsSearchResponse, ProposalGetResponse } from "@/app/types/proposales";
+import type {ProposalsSearchResponse, ProposalGetResponse} from "@/app/types/proposales";
 
 export const BASE_URL = "https://api.proposales.com/v3";
 
@@ -7,7 +7,7 @@ async function fetchProposales<T>(
     options?: RequestInit
 ): Promise<T> {
     const apiKey = process.env.PROPOSALES_API_KEY;
-    
+
     if (!apiKey) {
         throw new Error("PROPOSALES_API_KEY is not set");
     }
@@ -35,6 +35,34 @@ export async function listProposals() {
     // GET /v3/proposal-search?limit=25 - returns { data: [...] }
     // Default limit is 1, max is 25
     return fetchProposales<ProposalsSearchResponse>("/proposal-search?limit=25");
+}
+
+export async function listProposalsWithDetails() {
+    // First get the list of proposals
+    const searchResponse = await fetchProposales<ProposalsSearchResponse>("/proposal-search?limit=100");
+
+    // If no proposals, return empty
+    if (!searchResponse.data) {
+        return {data: []};
+    }
+
+    // Handle both single proposal and array
+    const proposals = Array.isArray(searchResponse.data) ? searchResponse.data : [searchResponse.data];
+
+    // Fetch full details for each proposal to get value fields
+    const detailedProposals = await Promise.all(
+        proposals.map(async (proposal: any) => {
+            try {
+                const detailResponse = await fetchProposales<ProposalGetResponse>(`/proposals/${proposal.uuid}`);
+                return detailResponse.data;
+            } catch (err) {
+                console.error(`Failed to fetch details for ${proposal.uuid}:`, err);
+                return proposal; // Return basic proposal if detail fetch fails
+            }
+        })
+    );
+
+    return {data: detailedProposals};
 }
 
 export async function getProposal(id: string) {
@@ -118,13 +146,13 @@ export async function createProposal(data: {
         title_md: data.title_md,
         language: data.language || "en", // Required field, default to English
     }
-    
+
     if (data.description_md) payload.description_md = data.description_md
     if (data.contact_email) payload.contact_email = data.contact_email
     if (data.recipient) payload.recipient = data.recipient
     if (data.blocks) payload.blocks = data.blocks
     if (data.data) payload.data = data.data
-    
+
     return fetchProposales<{ proposal: { uuid: string; url: string } }>("/proposals", {
         method: "POST",
         body: JSON.stringify(payload),

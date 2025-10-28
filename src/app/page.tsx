@@ -5,7 +5,7 @@ import Link from "next/link"
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 const Page = () => {
-    const { data, error, isLoading } = useSWR("/api/proposals/list", fetcher, {
+    const {data, error, isLoading} = useSWR("/api/proposals/list", fetcher, {
         revalidateOnFocus: true
     })
 
@@ -27,7 +27,7 @@ const Page = () => {
 
     // API returns { data: { ... } } structure
     const proposalData = data?.data
-    
+
     if (!proposalData) {
         return (
             <main className="p-8">
@@ -38,7 +38,10 @@ const Page = () => {
 
     // The proposal-search endpoint returns a single proposal object in data, not an array
     // We'll display it as a single item or handle it as an array if it's an array
-    const proposals = Array.isArray(proposalData) ? proposalData : [proposalData]
+    const allProposals = Array.isArray(proposalData) ? proposalData : [proposalData]
+
+    // Filter out deleted proposals
+    const proposals = allProposals.filter((p: any) => !p.deleted_at)
 
     return (
         <main className="p-8 max-w-6xl mx-auto">
@@ -79,14 +82,16 @@ const Page = () => {
             <div className="space-y-4">
                 <h2 className="text-2xl font-semibold mb-4">Your Proposals</h2>
                 {proposals.map((p: any) => (
-                    <div key={p.uuid || p.id} className="border border-gray-200 p-6 rounded-lg hover:shadow-md transition-shadow bg-white">
+                    <div key={p.uuid || p.id}
+                         className="border border-gray-200 p-6 rounded-lg hover:shadow-md transition-shadow bg-white">
                         <Link href={`/proposals/${p.uuid || p.id}`} className="block">
                             <div className="flex justify-between items-start mb-2">
                                 <h3 className="text-xl font-semibold text-blue-600 hover:text-blue-800">
                                     {p.title || "Untitled proposal"}
                                 </h3>
                                 {p.status && (
-                                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full capitalize">
+                                    <span
+                                        className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full capitalize">
                                         {p.status}
                                     </span>
                                 )}

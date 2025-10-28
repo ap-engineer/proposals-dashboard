@@ -1,6 +1,6 @@
 "use client"
-import { useState } from "react"
-import { useParams } from "next/navigation"
+import {useState} from "react"
+import {useParams} from "next/navigation"
 import useSWR from "swr"
 import Link from "next/link"
 
@@ -15,8 +15,8 @@ type Insights = {
 }
 
 const ProposalDetail = () => {
-    const { id } = useParams()
-    const { data, error, isLoading } = useSWR(`/api/proposals/${id}`, fetcher)
+    const {id} = useParams()
+    const {data, error, isLoading} = useSWR(`/api/proposals/${id}`, fetcher)
     const [showInsights, setShowInsights] = useState(false)
     const [insights, setInsights] = useState<Partial<Insights> | null>(null)
     const [loadingInsights, setLoadingInsights] = useState(false)
@@ -38,7 +38,7 @@ const ProposalDetail = () => {
 
             // Check content type to determine if it's JSON or stream
             const contentType = response.headers.get("content-type")
-            
+
             if (contentType?.includes("application/json")) {
                 // It's a JSON response (fallback or error)
                 const data = await response.json()
@@ -67,13 +67,13 @@ const ProposalDetail = () => {
             let fullText = ""
 
             while (true) {
-                const { done, value } = await reader.read()
-                
+                const {done, value} = await reader.read()
+
                 if (done) break
 
-                const chunk = decoder.decode(value, { stream: true })
+                const chunk = decoder.decode(value, {stream: true})
                 fullText += chunk
-                
+
                 // Try to parse the accumulated text as JSON
                 try {
                     // Remove any markdown code blocks if present
@@ -84,7 +84,7 @@ const ProposalDetail = () => {
                     // Continue accumulating until we have valid JSON
                 }
             }
-            
+
             // Final parse attempt
             try {
                 const cleanText = fullText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
@@ -104,14 +104,14 @@ const ProposalDetail = () => {
     const runHealthCheck = async () => {
         setLoadingHealth(true)
         setHealthError("")
-        
+
         try {
             const response = await fetch(`/api/proposals/${id}/health-check`, {
                 method: "POST"
             })
 
             const data = await response.json()
-            
+
             if (data.error && data.fallback) {
                 setHealthCheck(data.fallback)
             } else if (data.overallScore !== undefined) {
@@ -164,23 +164,47 @@ const ProposalDetail = () => {
             <Link href="/" className="text-blue-600 hover:underline mb-4 inline-block">
                 ← Back to proposals
             </Link>
-            
+
             <h1 className="text-3xl font-bold mb-2">{proposal.title || "Untitled Proposal"}</h1>
-            
+
             <div className="mb-6 space-y-2">
                 {proposal.status && (
                     <p className="text-lg">
-                        Status: <span className="font-semibold text-blue-600">{proposal.status}</span>
+                        Status: <span className="font-semibold text-blue-600 capitalize">{proposal.status}</span>
                     </p>
                 )}
+
+                {/* Price/Value Display */}
+                {(proposal.value_without_tax !== undefined || proposal.value_with_tax !== undefined) && (
+                    <div
+                        className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        {proposal.value_without_tax !== undefined && (
+                            <p className="text-lg font-semibold text-green-700 dark:text-green-400">
+                                Value (excl. tax): €{(proposal.value_without_tax / 100).toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })}
+                            </p>
+                        )}
+                        {proposal.value_with_tax !== undefined && (
+                            <p className="text-sm text-green-600 dark:text-green-500">
+                                Value (incl. tax): €{(proposal.value_with_tax / 100).toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })}
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 {proposal.company_name && (
-                    <p className="text-gray-700">Company: {proposal.company_name}</p>
+                    <p className="text-gray-700 dark:text-gray-300">Company: {proposal.company_name}</p>
                 )}
                 {proposal.recipient_name && (
-                    <p className="text-gray-700">Recipient: {proposal.recipient_name}</p>
+                    <p className="text-gray-700 dark:text-gray-300">Recipient: {proposal.recipient_name}</p>
                 )}
                 {proposal.created_at && (
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
                         Created: {new Date(proposal.created_at).toLocaleString()}
                     </p>
                 )}
@@ -211,8 +235,10 @@ const ProposalDetail = () => {
                     >
                         {loadingInsights && (
                             <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        strokeWidth="4" fill="none"/>
+                                <path className="opacity-75" fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                             </svg>
                         )}
                         {loadingInsights ? "Streaming..." : insights ? "Regenerate Insights" : "Generate Insights"}
@@ -226,14 +252,15 @@ const ProposalDetail = () => {
                 )}
 
                 {showInsights && insights && (
-                    <div className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+                    <div
+                        className="bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
                         {/* Sentiment Badge */}
                         {insights.sentiment && (
                             <div className="flex items-center gap-2 mb-4">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                                     insights.sentiment === "positive" ? "bg-green-100 text-green-800" :
-                                    insights.sentiment === "negative" ? "bg-red-100 text-red-800" :
-                                    "bg-gray-100 text-gray-800"
+                                        insights.sentiment === "negative" ? "bg-red-100 text-red-800" :
+                                            "bg-gray-100 text-gray-800"
                                 }`}>
                                     {insights.sentiment.charAt(0).toUpperCase() + insights.sentiment.slice(1)} Sentiment
                                 </span>
@@ -332,7 +359,8 @@ const ProposalDetail = () => {
                     <div className="bg-gradient-to-br from-green-50 to-blue-50 border border-green-200 rounded-lg p-6">
                         {/* Overall Score */}
                         <div className="mb-6 text-center">
-                            <div className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-white shadow-lg mb-3">
+                            <div
+                                className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-white shadow-lg mb-3">
                                 <div className="text-center">
                                     <div className="text-4xl font-bold text-green-600">{healthCheck.overallScore}</div>
                                     <div className="text-xs text-gray-600">out of 100</div>
@@ -341,9 +369,9 @@ const ProposalDetail = () => {
                             <div className="mt-2">
                                 <span className={`px-4 py-1 rounded-full text-sm font-medium ${
                                     healthCheck.verdict === "excellent" ? "bg-green-100 text-green-800" :
-                                    healthCheck.verdict === "good" ? "bg-blue-100 text-blue-800" :
-                                    healthCheck.verdict === "needs_work" ? "bg-yellow-100 text-yellow-800" :
-                                    "bg-red-100 text-red-800"
+                                        healthCheck.verdict === "good" ? "bg-blue-100 text-blue-800" :
+                                            healthCheck.verdict === "needs_work" ? "bg-yellow-100 text-yellow-800" :
+                                                "bg-red-100 text-red-800"
                                 }`}>
                                     {healthCheck.verdict.replace("_", " ").toUpperCase()}
                                 </span>
@@ -360,7 +388,7 @@ const ProposalDetail = () => {
                                             <div className="flex-1 bg-gray-200 rounded-full h-2">
                                                 <div
                                                     className="bg-green-600 h-2 rounded-full transition-all"
-                                                    style={{ width: `${value}%` }}
+                                                    style={{width: `${value}%`}}
                                                 />
                                             </div>
                                             <span className="text-sm font-semibold">{value}</span>
