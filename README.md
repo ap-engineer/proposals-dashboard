@@ -35,58 +35,58 @@ A modern Next.js dashboard for viewing and managing proposals from the [Proposal
 git clone <your-repo-url>
 cd proposal-dashboard
 ```
-
 2. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Create a `.env` file in the root directory:
+3. Set up environment variables:
 ```bash
-PROPOSALES_API_KEY=your_api_key_here
+cp .env.example .env
 ```
 
-4. Run the development server:
+4. Add your API keys to `.env`:
+```bash
+PROPOSALES_API_KEY=your_proposales_key
+GROQ_API_KEY=your_groq_key  # Optional, for AI features
+```
+
+5. Run the development server:
 ```bash
 npm run dev
 ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
+6. Open [http://localhost:3000](http://localhost:3000)
 
-### Building for Production
+## Environment Variables
 
-```bash
-npm run build
-npm start
-```
+### Required
+- `PROPOSALES_API_KEY` - Get from [Proposales Profile](https://secure.proposales.com/settings/profile)
+
+### Optional
+- `GROQ_API_KEY` - Get free key from [Groq Console](https://console.groq.com) (for AI features)
 
 ## Project Structure
 
 ```
 src/
-├── app/
-│   ├── api/
-│   │   └── proposals/
-│   │       ├── [id]/route.ts      # Get single proposal
-│   │       └── list/route.ts      # List all proposals
-│   ├── proposals/
-│   │   └── [id]/page.tsx          # Proposal detail page
-│   ├── types/
-│   │   └── proposales.ts          # TypeScript types
-│   ├── page.tsx                   # Home page
-│   └── layout.tsx                 # Root layout
-├── components/
-│   ├── ProposalCard.tsx           # Proposal card component
-│   ├── ProposalList.tsx           # Proposal list component
-│   ├── SearchBar.tsx              # Search component
-│   ├── LoadingState.tsx           # Loading state
-│   └── ErrorState.tsx             # Error state
-└── lib/
-    ├── proposales.ts              # Proposales API client
-    └── swrFetcher.ts              # SWR fetcher utility
+├── app/                    # Next.js app router pages
+│   ├── api/               # API routes
+│   │   ├── ai/           # AI endpoints
+│   │   └── proposals/    # Proposal endpoints
+│   ├── analytics/        # Analytics page
+│   ├── content/          # Content library page
+│   ├── create/           # Create proposal page
+│   └── proposals/[id]/   # Proposal detail page
+├── components/            # Reusable React components
+├── lib/                   # Utilities and configurations
+│   ├── proposales.ts     # Proposales API client
+│   ├── utils.ts          # Helper functions
+│   └── constants.ts      # App constants
+└── types/                 # TypeScript type definitions
 ```
 
-## API Routes
+## Key Features Explained
 
 - `GET /api/proposals/list` - Fetch all proposals
 - `GET /api/proposals/[id]` - Fetch a specific proposal by UUID

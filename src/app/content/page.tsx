@@ -5,7 +5,7 @@ import Link from "next/link"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export default function ContentLibraryPage() {
+const ContentLibraryPage = () => {
     const { data, error, isLoading } = useSWR("/api/content", fetcher)
     const [filter, setFilter] = useState<"all" | "active" | "archived">("all")
     const [searchQuery, setSearchQuery] = useState("")
@@ -352,3 +352,5 @@ export default function ContentLibraryPage() {
         </main>
     )
 }
+
+export default ContentLibraryPage

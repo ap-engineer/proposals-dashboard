@@ -6,7 +6,7 @@ import useSWR from "swr"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export default function CreateProposalPage() {
+const CreateProposalPage = () => {
     const router = useRouter()
     const { data: companiesData } = useSWR("/api/companies", fetcher)
     
@@ -308,3 +308,5 @@ export default function CreateProposalPage() {
         </main>
     )
 }
+
+export default CreateProposalPage

@@ -4,7 +4,7 @@ import Link from "next/link"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export default function AnalyticsPage() {
+const AnalyticsPage = () => {
     const { data, error, isLoading } = useSWR("/api/analytics", fetcher, {
         refreshInterval: 30000 // Refresh every 30 seconds
     })
@@ -139,3 +139,5 @@ export default function AnalyticsPage() {
         </main>
     )
 }
+
+export default AnalyticsPage

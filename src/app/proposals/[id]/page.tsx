@@ -1,6 +1,6 @@
 "use client"
-import { useParams } from "next/navigation"
 import { useState } from "react"
+import { useParams } from "next/navigation"
 import useSWR from "swr"
 import Link from "next/link"
 
@@ -14,7 +14,7 @@ type Insights = {
     confidence: number
 }
 
-export default function ProposalDetail() {
+const ProposalDetail = () => {
     const { id } = useParams()
     const { data, error, isLoading } = useSWR(`/api/proposals/${id}`, fetcher)
     const [showInsights, setShowInsights] = useState(false)
@@ -440,3 +440,5 @@ export default function ProposalDetail() {
         </main>
     )
 }
+
+export default ProposalDetail

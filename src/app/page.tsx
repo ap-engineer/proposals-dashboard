@@ -4,7 +4,7 @@ import Link from "next/link"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
-export default function Page() {
+const Page = () => {
     const { data, error, isLoading } = useSWR("/api/proposals/list", fetcher, {
         revalidateOnFocus: true
     })
@@ -110,3 +110,5 @@ export default function Page() {
         </main>
     )
 }
+
+export default Page
