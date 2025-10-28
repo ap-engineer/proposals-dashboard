@@ -32,8 +32,9 @@ async function fetchProposales<T>(
 }
 
 export async function listProposals() {
-    // GET /v3/proposal-search - returns { data: { ... } }
-    return fetchProposales<ProposalsSearchResponse>("/proposal-search");
+    // GET /v3/proposal-search?limit=25 - returns { data: [...] }
+    // Default limit is 1, max is 25
+    return fetchProposales<ProposalsSearchResponse>("/proposal-search?limit=25");
 }
 
 export async function getProposal(id: string) {
@@ -58,7 +59,8 @@ export async function createProposal(data: {
     language?: string;
     contact_email?: string;
     recipient?: {
-        name?: string;
+        first_name?: string;
+        last_name?: string;
         email?: string;
         company_name?: string;
     };
@@ -66,8 +68,20 @@ export async function createProposal(data: {
     data?: Record<string, any>;
 }) {
     // POST /v3/proposals - returns { proposal: { uuid, url } }
+    const payload: any = {
+        company_id: data.company_id,
+        title_md: data.title_md,
+        language: data.language || "en", // Required field, default to English
+    }
+    
+    if (data.description_md) payload.description_md = data.description_md
+    if (data.contact_email) payload.contact_email = data.contact_email
+    if (data.recipient) payload.recipient = data.recipient
+    if (data.blocks) payload.blocks = data.blocks
+    if (data.data) payload.data = data.data
+    
     return fetchProposales<{ proposal: { uuid: string; url: string } }>("/proposals", {
         method: "POST",
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
     });
 }

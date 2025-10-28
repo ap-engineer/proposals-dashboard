@@ -33,43 +33,69 @@ export default function ProposalDetail() {
                 method: "POST"
             })
 
-            if (!response.ok) {
+            // Check content type to determine if it's JSON or stream
+            const contentType = response.headers.get("content-type")
+            
+            if (contentType?.includes("application/json")) {
+                // It's a JSON response (fallback or error)
                 const data = await response.json()
-                throw new Error(data.error || "Failed to generate insights")
+                if (data.fallback) {
+                    setInsights(data.fallback)
+                    setLoadingInsights(false)
+                    return
+                }
+                if (data.error) {
+                    throw new Error(data.error)
+                }
             }
 
-            // Handle streaming response
+            if (!response.ok) {
+                throw new Error("Failed to generate insights")
+            }
+
+            // Handle streaming response from Vercel AI SDK
             const reader = response.body?.getReader()
             const decoder = new TextDecoder()
-            let buffer = ""
 
             if (!reader) {
                 throw new Error("No response body")
             }
+
+            let currentObject: Partial<Insights> = {}
+            let fullText = ""
 
             while (true) {
                 const { done, value } = await reader.read()
                 
                 if (done) break
 
-                buffer += decoder.decode(value, { stream: true })
+                const chunk = decoder.decode(value, { stream: true })
+                fullText += chunk
+                console.log("Received chunk:", chunk)
                 
-                // Try to parse the accumulated buffer
-                const lines = buffer.split('\n')
-                buffer = lines.pop() || "" // Keep incomplete line in buffer
+                const lines = chunk.split('\n').filter(line => line.trim())
 
                 for (const line of lines) {
+                    console.log("Processing line:", line)
                     if (line.startsWith('0:')) {
                         try {
-                            const jsonStr = line.substring(2)
-                            const parsed = JSON.parse(jsonStr)
-                            setInsights(parsed)
+                            const jsonStr = line.substring(2).trim()
+                            if (jsonStr) {
+                                const parsed = JSON.parse(jsonStr)
+                                console.log("Parsed object:", parsed)
+                                // Merge with current object for progressive updates
+                                currentObject = { ...currentObject, ...parsed }
+                                setInsights(currentObject)
+                            }
                         } catch (e) {
-                            // Continue if parse fails
+                            console.error("Parse error:", e, "Line:", line)
                         }
                     }
                 }
             }
+            
+            console.log("Full stream text:", fullText)
+            console.log("Final insights:", currentObject)
 
         } catch (err: any) {
             setInsightsError(err.message)
@@ -133,7 +159,7 @@ export default function ProposalDetail() {
                 )}
                 {proposal.created_at && (
                     <p className="text-gray-600 text-sm">
-                        Created: {new Date(proposal.created_at * 1000).toLocaleString()}
+                        Created: {new Date(proposal.created_at).toLocaleString()}
                     </p>
                 )}
             </div>

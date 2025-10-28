@@ -5,7 +5,9 @@ import Link from "next/link"
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 export default function Page() {
-    const { data, error, isLoading } = useSWR("/api/proposals/list", fetcher)
+    const { data, error, isLoading } = useSWR("/api/proposals/list", fetcher, {
+        revalidateOnFocus: true
+    })
 
     if (isLoading) {
         return (
@@ -87,7 +89,7 @@ export default function Page() {
                             </div>
                             <div className="text-sm text-gray-600 space-y-1">
                                 {p.created_at && (
-                                    <p>📅 Created: {new Date(p.created_at * 1000).toLocaleString()}</p>
+                                    <p>📅 Created: {new Date(p.created_at).toLocaleString()}</p>
                                 )}
                                 {p.company_name && <p>🏢 Company: {p.company_name}</p>}
                                 {p.recipient_name && <p>👤 Recipient: {p.recipient_name}</p>}

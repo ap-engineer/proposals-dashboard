@@ -28,20 +28,25 @@ export async function POST(
             )
         }
 
-        // Check if OpenAI API key is available
+        // Check for OpenAI API key
         const openaiKey = process.env.OPENAI_API_KEY
+        
         if (!openaiKey) {
+            // No API key - return fallback with instructions
             return new Response(
                 JSON.stringify({
                     error: "OpenAI API key not configured",
                     fallback: {
-                        summary: `Proposal: ${proposal.title || "Untitled"}`,
+                        summary: `Proposal: ${proposal.title || "Untitled"}. Add OPENAI_API_KEY to enable AI-powered insights.`,
                         keyPoints: [
                             `Status: ${proposal.status || "Unknown"}`,
                             `Company: ${proposal.company_name || "N/A"}`,
-                            `Created: ${proposal.created_at ? new Date(proposal.created_at * 1000).toLocaleDateString() : "N/A"}`
+                            `Created: ${proposal.created_at ? new Date(proposal.created_at).toLocaleDateString() : "N/A"}`
                         ],
-                        suggestions: ["Add OpenAI API key to enable AI insights"],
+                        suggestions: [
+                            "Get OpenAI API key at https://platform.openai.com/api-keys",
+                            "Add OPENAI_API_KEY to your .env file"
+                        ],
                         sentiment: "neutral" as const,
                         confidence: 0
                     }
@@ -50,7 +55,7 @@ export async function POST(
             )
         }
 
-        // Use Vercel AI SDK's streamObject for structured streaming
+        // Use Vercel AI SDK's streamObject with OpenAI for structured streaming
         const result = await streamObject({
             model: openai("gpt-4o-mini"),
             schema: insightsSchema,
@@ -64,7 +69,7 @@ Proposal Details:
 - Recipient: ${proposal.recipient_name || "N/A"}
 - Recipient Company: ${proposal.recipient_company_name || "N/A"}
 - Value: ${proposal.value_without_tax ? `$${proposal.value_without_tax}` : "N/A"}
-- Created: ${proposal.created_at ? new Date(proposal.created_at * 1000).toLocaleDateString() : "N/A"}
+- Created: ${proposal.created_at ? new Date(proposal.created_at).toLocaleDateString() : "N/A"}
 
 Provide:
 1. A compelling summary highlighting the proposal's purpose and value

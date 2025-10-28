@@ -125,7 +125,7 @@ export default function AnalyticsPage() {
                                     </div>
                                     <span className="text-xs text-gray-500">
                                         {proposal.created_at
-                                            ? new Date(proposal.created_at * 1000).toLocaleDateString()
+                                            ? new Date(proposal.created_at).toLocaleDateString()
                                             : "N/A"}
                                     </span>
                                 </div>
