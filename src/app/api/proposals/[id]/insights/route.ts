@@ -1,0 +1,87 @@
+import { getProposal } from "@/lib/proposales"
+import { openai } from "@ai-sdk/openai"
+import { streamObject } from "ai"
+import { z } from "zod"
+
+// Define structured output schema using Zod
+const insightsSchema = z.object({
+    summary: z.string().describe("A brief 2-3 sentence summary of the proposal"),
+    keyPoints: z.array(z.string()).describe("3-5 key points about this proposal"),
+    suggestions: z.array(z.string()).describe("2-3 actionable suggestions to improve the proposal"),
+    sentiment: z.enum(["positive", "neutral", "negative"]).describe("Overall sentiment of the proposal"),
+    confidence: z.number().min(0).max(100).describe("Confidence score of the analysis (0-100)")
+})
+
+export async function POST(
+    _: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params
+        const response = await getProposal(id)
+        const proposal = response.data
+
+        if (!proposal) {
+            return new Response(
+                JSON.stringify({ error: "Proposal not found" }),
+                { status: 404, headers: { "Content-Type": "application/json" } }
+            )
+        }
+
+        // Check if OpenAI API key is available
+        const openaiKey = process.env.OPENAI_API_KEY
+        if (!openaiKey) {
+            return new Response(
+                JSON.stringify({
+                    error: "OpenAI API key not configured",
+                    fallback: {
+                        summary: `Proposal: ${proposal.title || "Untitled"}`,
+                        keyPoints: [
+                            `Status: ${proposal.status || "Unknown"}`,
+                            `Company: ${proposal.company_name || "N/A"}`,
+                            `Created: ${proposal.created_at ? new Date(proposal.created_at * 1000).toLocaleDateString() : "N/A"}`
+                        ],
+                        suggestions: ["Add OpenAI API key to enable AI insights"],
+                        sentiment: "neutral" as const,
+                        confidence: 0
+                    }
+                }),
+                { status: 200, headers: { "Content-Type": "application/json" } }
+            )
+        }
+
+        // Use Vercel AI SDK's streamObject for structured streaming
+        const result = await streamObject({
+            model: openai("gpt-4o-mini"),
+            schema: insightsSchema,
+            prompt: `You are an expert business analyst. Analyze this proposal and provide detailed insights.
+
+Proposal Details:
+- Title: ${proposal.title || "Untitled"}
+- Status: ${proposal.status || "Unknown"}
+- Description: ${proposal.description_md || proposal.description_html || "No description"}
+- Company: ${proposal.company_name || "N/A"}
+- Recipient: ${proposal.recipient_name || "N/A"}
+- Recipient Company: ${proposal.recipient_company_name || "N/A"}
+- Value: ${proposal.value_without_tax ? `$${proposal.value_without_tax}` : "N/A"}
+- Created: ${proposal.created_at ? new Date(proposal.created_at * 1000).toLocaleDateString() : "N/A"}
+
+Provide:
+1. A compelling summary highlighting the proposal's purpose and value
+2. 3-5 key points about strengths, opportunities, or important details
+3. 2-3 specific, actionable suggestions to improve the proposal
+4. Overall sentiment (positive/neutral/negative)
+5. Your confidence level in this analysis (0-100)`,
+        })
+
+        // Stream the response back to the client
+        return result.toTextStreamResponse()
+
+    } catch (err: any) {
+        console.error("Error generating insights:", err)
+        return new Response(
+            JSON.stringify({ error: err.message }),
+            { status: 500, headers: { "Content-Type": "application/json" } }
+        )
+    }
+}
