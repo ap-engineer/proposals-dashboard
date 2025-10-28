@@ -1,8 +1,13 @@
-import { FormEvent, useState } from "react"
+import { FormEvent, useState, useEffect } from "react"
 import { Card, CardContent, Input, Textarea, Select, Button, Alert } from "@/components/ui"
 
 interface ContentCreateFormProps {
     onSubmit: (data: any) => Promise<void>
+    prefillData?: {
+        title?: string
+        description?: string
+        imageUrl?: string
+    }
 }
 
 const LANGUAGES = [
@@ -13,7 +18,7 @@ const LANGUAGES = [
     { value: "es", label: "Spanish" }
 ]
 
-export const ContentCreateForm = ({ onSubmit }: ContentCreateFormProps) => {
+export const ContentCreateForm = ({ onSubmit, prefillData }: ContentCreateFormProps) => {
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
@@ -24,6 +29,19 @@ export const ContentCreateForm = ({ onSubmit }: ContentCreateFormProps) => {
         imageUrl: "",
         language: "en"
     })
+
+    // Prefill form when AI generates content
+    useEffect(() => {
+        if (prefillData) {
+            setFormData(prev => ({
+                ...prev,
+                title: prefillData.title || prev.title,
+                description: prefillData.description || prev.description,
+                imageUrl: prefillData.imageUrl || prev.imageUrl
+            }))
+            setIsOpen(true) // Auto-open form when prefilled
+        }
+    }, [prefillData])
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault()
@@ -64,6 +82,12 @@ export const ContentCreateForm = ({ onSubmit }: ContentCreateFormProps) => {
 
                 {isOpen && (
                     <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+                        {prefillData && (
+                            <Alert variant="info">
+                                ✨ Form prefilled with AI-generated content. Review and edit as needed.
+                            </Alert>
+                        )}
+
                         {success && (
                             <Alert variant="success">
                                 Content created successfully! Refreshing...

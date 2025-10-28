@@ -93,8 +93,22 @@ const ContentLibraryPage = () => {
             
             if (data.error && data.fallback) {
                 setGeneratedContent(data.fallback)
+                // Prefill the create form
+                setFormData({
+                    ...formData,
+                    title: data.fallback.title || "",
+                    description: data.fallback.description || ""
+                })
+                setShowCreateForm(true) // Auto-open the form
             } else if (data.title) {
                 setGeneratedContent(data)
+                // Prefill the create form
+                setFormData({
+                    ...formData,
+                    title: data.title || "",
+                    description: data.description || ""
+                })
+                setShowCreateForm(true) // Auto-open the form
             }
         } catch (err: any) {
             console.error("Content generation error:", err)
