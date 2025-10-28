@@ -48,7 +48,7 @@ export default function Page() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-4 mb-8">
+            <div className="flex flex-wrap gap-4 mb-8">
                 <Link
                     href="/create"
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
@@ -60,6 +60,12 @@ export default function Page() {
                     className="px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
                 >
                     📊 View Analytics
+                </Link>
+                <Link
+                    href="/content"
+                    className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+                >
+                    📚 Content Library
                 </Link>
                 <a
                     href="/api/webhook"
