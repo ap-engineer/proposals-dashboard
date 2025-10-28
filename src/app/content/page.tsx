@@ -13,6 +13,20 @@ const ContentLibraryPage = () => {
     const [generatorPrompt, setGeneratorPrompt] = useState("")
     const [generating, setGenerating] = useState(false)
     const [generatedContent, setGeneratedContent] = useState<any>(null)
+    const [showCreateForm, setShowCreateForm] = useState(false)
+    const [creating, setCreating] = useState(false)
+    const [createError, setCreateError] = useState("")
+    const [createSuccess, setCreateSuccess] = useState(false)
+    const [formData, setFormData] = useState({
+        title: "",
+        description: "",
+        imageUrl: "",
+        language: "en"
+    })
+    const [editingItem, setEditingItem] = useState<any>(null)
+    const [updating, setUpdating] = useState(false)
+    const [updateError, setUpdateError] = useState("")
+    const [updateSuccess, setUpdateSuccess] = useState(false)
 
     if (isLoading) {
         return (
@@ -36,8 +50,8 @@ const ContentLibraryPage = () => {
     const filteredContent = contentItems.filter((item: any) => {
         const matchesFilter = 
             filter === "all" ? true :
-            filter === "active" ? !item.is_archived :
-            item.is_archived
+            filter === "active" ? !item.deactivated_at :
+            item.deactivated_at
 
         const matchesSearch = searchQuery === "" || 
             (item.title && JSON.stringify(item.title).toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -46,8 +60,8 @@ const ContentLibraryPage = () => {
         return matchesFilter && matchesSearch
     })
 
-    const activeCount = contentItems.filter((item: any) => !item.is_archived).length
-    const archivedCount = contentItems.filter((item: any) => item.is_archived).length
+    const activeCount = contentItems.filter((item: any) => !item.deactivated_at).length
+    const archivedCount = contentItems.filter((item: any) => item.deactivated_at).length
 
     const generateContent = async () => {
         if (!generatorPrompt.trim()) return
@@ -74,6 +88,120 @@ const ContentLibraryPage = () => {
         }
     }
 
+    const handleEditClick = (item: any) => {
+        setEditingItem(item)
+        setUpdateError("")
+        setUpdateSuccess(false)
+    }
+
+    const handleUpdateContent = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setUpdating(true)
+        setUpdateError("")
+        setUpdateSuccess(false)
+
+        try {
+            const title = typeof editingItem.title === "string" 
+                ? editingItem.title 
+                : editingItem.title?.[editingItem.language] || ""
+            
+            const description = typeof editingItem.description === "string"
+                ? editingItem.description
+                : editingItem.description?.[editingItem.language] || ""
+
+            const payload: any = {
+                product_id: editingItem.product_id,
+                variation_id: editingItem.variation_id,
+                language: editingItem.language || "en",
+                title: title,
+            }
+
+            if (description) payload.description = description
+
+            const response = await fetch("/api/content/update", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to update content")
+            }
+
+            setUpdateSuccess(true)
+            
+            // Refresh content list
+            setTimeout(() => {
+                setEditingItem(null)
+                window.location.reload()
+            }, 1500)
+
+        } catch (err: any) {
+            setUpdateError(err.message)
+        } finally {
+            setUpdating(false)
+        }
+    }
+
+    const handleCreateContent = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setCreating(true)
+        setCreateError("")
+        setCreateSuccess(false)
+
+        try {
+            // Get company_id from companies data
+            const companiesResponse = await fetch("/api/companies")
+            const companiesData = await companiesResponse.json()
+            const companies = companiesData?.data || []
+            
+            if (companies.length === 0) {
+                throw new Error("No companies found. Please create a company first.")
+            }
+
+            const payload: any = {
+                company_id: companies[0].id, // Use first company
+                language: formData.language,
+                title: formData.title,
+            }
+
+            if (formData.description) payload.description = formData.description
+            if (formData.imageUrl) {
+                payload.images = [{
+                    uuid: "",
+                    url: formData.imageUrl
+                }]
+            }
+
+            const response = await fetch("/api/content/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            })
+
+            const result = await response.json()
+
+            if (!response.ok) {
+                throw new Error(result.error || "Failed to create content")
+            }
+
+            setCreateSuccess(true)
+            setFormData({ title: "", description: "", imageUrl: "", language: "en" })
+            
+            // Refresh content list
+            setTimeout(() => {
+                window.location.reload()
+            }, 1500)
+
+        } catch (err: any) {
+            setCreateError(err.message)
+        } finally {
+            setCreating(false)
+        }
+    }
+
     return (
         <main className="container max-w-7xl mx-auto py-8 px-4">
             <div className="mb-6">
@@ -85,6 +213,105 @@ const ContentLibraryPage = () => {
             <div className="mb-8">
                 <h1 className="text-4xl font-bold mb-2">Content Library</h1>
                 <p className="text-gray-600">Browse and manage your proposal content and products</p>
+            </div>
+
+            {/* Create Content Form */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 className="font-semibold text-blue-900">➕ Create Content Item</h3>
+                        <p className="text-sm text-blue-700">Add a new product or service to your library</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowCreateForm(!showCreateForm)}
+                        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                        {showCreateForm ? "Hide" : "Show"}
+                    </button>
+                </div>
+
+                {showCreateForm && (
+                    <form onSubmit={handleCreateContent} className="space-y-4 mt-4">
+                        {createSuccess && (
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p className="text-green-800 text-sm">✓ Content created successfully! Refreshing...</p>
+                            </div>
+                        )}
+
+                        {createError && (
+                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                                <p className="text-red-800 text-sm">Error: {createError}</p>
+                            </div>
+                        )}
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Title *
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={formData.title}
+                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="e.g., Professional Website Design"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea
+                                value={formData.description}
+                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                placeholder="Detailed description of your product or service..."
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Image URL (optional)
+                            </label>
+                            <input
+                                type="url"
+                                value={formData.imageUrl}
+                                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                                placeholder="https://example.com/image.jpg"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Provide a publicly accessible image URL</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Language
+                            </label>
+                            <select
+                                value={formData.language}
+                                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            >
+                                <option value="en">English</option>
+                                <option value="nl">Dutch</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <option value="es">Spanish</option>
+                            </select>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={creating || !formData.title}
+                            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+                        >
+                            {creating ? "Creating..." : "Create Content Item"}
+                        </button>
+                    </form>
+                )}
             </div>
 
             {/* AI Content Generator */}
@@ -264,38 +491,25 @@ const ContentLibraryPage = () => {
                         <div
                             key={item.product_id || item.variation_id}
                             className={`bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow ${
-                                item.is_archived ? "opacity-60" : ""
+                                item.deactivated_at ? "opacity-60" : ""
                             }`}
                         >
-                            {/* Image */}
-                            {item.images && item.images.length > 0 && item.images[0].url ? (
-                                <div className="aspect-video bg-gray-100 relative">
-                                    <img
-                                        src={item.images[0].url}
-                                        alt={item.title || "Content image"}
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => {
-                                            e.currentTarget.style.display = "none"
-                                        }}
+                            {/* Image Placeholder - Images not returned by API */}
+                            <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                                <svg
+                                    className="w-16 h-16 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                                     />
-                                </div>
-                            ) : (
-                                <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
-                                    <svg
-                                        className="w-16 h-16 text-gray-400"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                                        />
-                                    </svg>
-                                </div>
-                            )}
+                                </svg>
+                            </div>
 
                             {/* Content */}
                             <div className="p-4">
@@ -303,9 +517,9 @@ const ContentLibraryPage = () => {
                                     <h3 className="font-semibold text-lg flex-1">
                                         {typeof item.title === "string"
                                             ? item.title
-                                            : item.title?.en || "Untitled"}
+                                            : item.title?.en || item.title?.fr || item.title?.nl || Object.values(item.title || {})[0] || "Untitled"}
                                     </h3>
-                                    {item.is_archived && (
+                                    {item.deactivated_at && (
                                         <span className="px-2 py-1 bg-gray-200 text-gray-700 text-xs rounded-full">
                                             Archived
                                         </span>
@@ -316,37 +530,175 @@ const ContentLibraryPage = () => {
                                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                                         {typeof item.description === "string"
                                             ? item.description
-                                            : item.description?.en || ""}
+                                            : item.description?.en || item.description?.fr || item.description?.nl || Object.values(item.description || {})[0] || ""}
                                     </p>
                                 )}
 
-                                <div className="flex items-center justify-between text-sm text-gray-500">
+                                <div className="flex items-center justify-between text-sm text-gray-500 mb-2">
                                     <div>
                                         {item.product_id && (
-                                            <span className="mr-2">ID: {item.product_id}</span>
+                                            <span className="mr-2">Product: {item.product_id}</span>
                                         )}
                                         {item.variation_id && (
-                                            <span>Var: {item.variation_id}</span>
+                                            <span>Variation: {item.variation_id}</span>
                                         )}
                                     </div>
-                                    {item.created_at && (
-                                        <span>
-                                            {new Date(item.created_at * 1000).toLocaleDateString()}
-                                        </span>
-                                    )}
                                 </div>
 
-                                {/* Sources */}
-                                {item.sources && Object.keys(item.sources).length > 0 && (
+                                {item.created_at && (
+                                    <div className="text-xs text-gray-500">
+                                        Created: {new Date(item.created_at).toLocaleDateString()}
+                                    </div>
+                                )}
+
+                                {/* Integration Info */}
+                                {item.integration_id && (
                                     <div className="mt-3 pt-3 border-t">
                                         <p className="text-xs text-gray-500">
-                                            Sources: {Object.keys(item.sources).join(", ")}
+                                            Integration ID: {item.integration_id}
                                         </p>
                                     </div>
                                 )}
+
+                                {/* Edit Button */}
+                                <button
+                                    onClick={() => handleEditClick(item)}
+                                    className="mt-4 w-full px-3 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                                >
+                                    ✏️ Edit Content
+                                </button>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingItem && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-2xl font-bold">Edit Content Item</h2>
+                                <button
+                                    onClick={() => setEditingItem(null)}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            {updateSuccess && (
+                                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                    <p className="text-green-800 text-sm">✓ Content updated successfully! Refreshing...</p>
+                                </div>
+                            )}
+
+                            {updateError && (
+                                <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                                    <p className="text-red-800 text-sm">Error: {updateError}</p>
+                                </div>
+                            )}
+
+                            <form onSubmit={handleUpdateContent} className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+                                    <div>
+                                        <p className="text-xs text-gray-600">Product ID</p>
+                                        <p className="font-medium">{editingItem.product_id}</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xs text-gray-600">Variation ID</p>
+                                        <p className="font-medium">{editingItem.variation_id}</p>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Language
+                                    </label>
+                                    <select
+                                        value={editingItem.language || "en"}
+                                        onChange={(e) => setEditingItem({ ...editingItem, language: e.target.value })}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="en">English</option>
+                                        <option value="nl">Dutch</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="es">Spanish</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Title *
+                                    </label>
+                                    <input
+                                        type="text"
+                                        required
+                                        value={
+                                            typeof editingItem.title === "string"
+                                                ? editingItem.title
+                                                : editingItem.title?.[editingItem.language || "en"] || ""
+                                        }
+                                        onChange={(e) => {
+                                            const lang = editingItem.language || "en"
+                                            setEditingItem({
+                                                ...editingItem,
+                                                title: typeof editingItem.title === "string"
+                                                    ? e.target.value
+                                                    : { ...editingItem.title, [lang]: e.target.value }
+                                            })
+                                        }}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Description
+                                    </label>
+                                    <textarea
+                                        value={
+                                            typeof editingItem.description === "string"
+                                                ? editingItem.description
+                                                : editingItem.description?.[editingItem.language || "en"] || ""
+                                        }
+                                        onChange={(e) => {
+                                            const lang = editingItem.language || "en"
+                                            setEditingItem({
+                                                ...editingItem,
+                                                description: typeof editingItem.description === "string"
+                                                    ? e.target.value
+                                                    : { ...editingItem.description, [lang]: e.target.value }
+                                            })
+                                        }}
+                                        rows={4}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    />
+                                </div>
+
+                                <div className="flex gap-3 pt-4">
+                                    <button
+                                        type="submit"
+                                        disabled={updating}
+                                        className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                                    >
+                                        {updating ? "Updating..." : "Update Content"}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditingItem(null)}
+                                        className="px-6 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             )}
         </main>

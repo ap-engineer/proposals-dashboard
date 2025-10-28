@@ -52,6 +52,51 @@ export async function listContent() {
     return fetchProposales<{ data: any[] }>("/content");
 }
 
+export async function createContent(data: {
+    company_id: number;
+    language: string;
+    title: string;
+    description?: string;
+    images?: Array<{
+        uuid?: string;
+        url?: string;
+        filename?: string;
+        mime_type?: string;
+        size?: number;
+        height?: number;
+        width?: number;
+    }>;
+}) {
+    // POST /v3/content - returns { data: { product_id, variation_id, message } }
+    return fetchProposales<{ data: { product_id: number; variation_id: number; message: string } }>("/content", {
+        method: "POST",
+        body: JSON.stringify(data),
+    });
+}
+
+export async function updateContent(data: {
+    product_id: number;
+    variation_id: number;
+    language: string;
+    title: string;
+    description?: string;
+    images?: Array<{
+        uuid?: string;
+        url?: string;
+        filename?: string;
+        mime_type?: string;
+        size?: number;
+        height?: number;
+        width?: number;
+    }>;
+}) {
+    // PUT /v3/content - returns { data: { product_id, variation_id, message } }
+    return fetchProposales<{ data: { product_id: number; variation_id: number; message: string } }>("/content", {
+        method: "PUT",
+        body: JSON.stringify(data),
+    });
+}
+
 export async function createProposal(data: {
     company_id: number;
     title_md: string;
