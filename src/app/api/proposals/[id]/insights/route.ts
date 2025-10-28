@@ -1,6 +1,6 @@
 import { getProposal } from "@/lib/proposales"
-import { openai } from "@ai-sdk/openai"
-import { streamObject } from "ai"
+import { groq } from "@ai-sdk/groq"
+import { streamText } from "ai"
 import { z } from "zod"
 
 // Define structured output schema using Zod
@@ -28,14 +28,14 @@ export async function POST(
             )
         }
 
-        // Check for OpenAI API key
-        const openaiKey = process.env.OPENAI_API_KEY
+        // Check for Groq API key
+        const groqKey = process.env.GROQ_API_KEY
         
-        if (!openaiKey) {
+        if (!groqKey) {
             // No API key - return fallback with instructions
             return new Response(
                 JSON.stringify({
-                    error: "OpenAI API key not configured",
+                    error: "Groq API key not configured",
                     fallback: {
                         summary: `Proposal: ${proposal.title || "Untitled"}. Add OPENAI_API_KEY to enable AI-powered insights.`,
                         keyPoints: [
@@ -44,8 +44,8 @@ export async function POST(
                             `Created: ${proposal.created_at ? new Date(proposal.created_at).toLocaleDateString() : "N/A"}`
                         ],
                         suggestions: [
-                            "Get OpenAI API key at https://platform.openai.com/api-keys",
-                            "Add OPENAI_API_KEY to your .env file"
+                            "Get free Groq API key at https://console.groq.com",
+                            "Add GROQ_API_KEY to your .env file"
                         ],
                         sentiment: "neutral" as const,
                         confidence: 0
@@ -55,11 +55,21 @@ export async function POST(
             )
         }
 
-        // Use Vercel AI SDK's streamObject with OpenAI for structured streaming
-        const result = await streamObject({
-            model: openai("gpt-4o-mini"),
-            schema: insightsSchema,
+        // Use Vercel AI SDK with Groq (JSON mode)
+        const result = await streamText({
+            model: groq("llama-3.3-70b-versatile"),
             prompt: `You are an expert business analyst. Analyze this proposal and provide detailed insights.
+
+You MUST respond with valid JSON matching this exact structure:
+{
+  "summary": "string",
+  "keyPoints": ["string"],
+  "suggestions": ["string"],
+  "sentiment": "positive" | "neutral" | "negative",
+  "confidence": number (0-100)
+}
+
+Analyze this proposal:
 
 Proposal Details:
 - Title: ${proposal.title || "Untitled"}
@@ -76,10 +86,11 @@ Provide:
 2. 3-5 key points about strengths, opportunities, or important details
 3. 2-3 specific, actionable suggestions to improve the proposal
 4. Overall sentiment (positive/neutral/negative)
-5. Your confidence level in this analysis (0-100)`,
+5. Your confidence level in this analysis (0-100)
+
+Respond ONLY with the JSON object, no other text.`,
         })
 
-        // Stream the response back to the client
         return result.toTextStreamResponse()
 
     } catch (err: any) {

@@ -22,8 +22,52 @@ export default function CreateProposalPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [success, setSuccess] = useState<{ uuid: string; url: string } | null>(null)
+    const [aiPrompt, setAiPrompt] = useState("")
+    const [generatingAI, setGeneratingAI] = useState(false)
+    const [showAIHelper, setShowAIHelper] = useState(false)
 
     const companies = companiesData?.data || []
+
+    const generateWithAI = async () => {
+        if (!aiPrompt.trim()) return
+        
+        setGeneratingAI(true)
+        try {
+            const response = await fetch("/api/ai/generate-proposal", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    prompt: aiPrompt,
+                    companyName: companies.find((c: any) => c.id === parseInt(formData.company_id))?.name,
+                    recipientName: formData.recipient_name
+                })
+            })
+
+            const data = await response.json()
+            
+            if (data.error && data.fallback) {
+                // Use fallback
+                setFormData({
+                    ...formData,
+                    title_md: data.fallback.title,
+                    description_md: data.fallback.description
+                })
+            } else if (data.title) {
+                // Use AI generated content
+                setFormData({
+                    ...formData,
+                    title_md: data.title,
+                    description_md: data.description
+                })
+                setShowAIHelper(false)
+                setAiPrompt("")
+            }
+        } catch (err: any) {
+            console.error("AI generation error:", err)
+        } finally {
+            setGeneratingAI(false)
+        }
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -40,11 +84,10 @@ export default function CreateProposalPage() {
 
             // Add recipient if provided
             if (formData.recipient_name || formData.recipient_email || formData.recipient_company_name) {
-                payload.recipient = {
-                    name: formData.recipient_name || undefined,
-                    email: formData.recipient_email || undefined,
-                    company_name: formData.recipient_company_name || undefined
-                }
+                payload.recipient = {}
+                if (formData.recipient_name) payload.recipient.first_name = formData.recipient_name
+                if (formData.recipient_email) payload.recipient.email = formData.recipient_email
+                if (formData.recipient_company_name) payload.recipient.company_name = formData.recipient_company_name
             }
 
             const response = await fetch("/api/proposals/create", {
@@ -105,6 +148,43 @@ export default function CreateProposalPage() {
                     <p className="text-red-800">Error: {error}</p>
                 </div>
             )}
+
+            {/* AI Helper */}
+            <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 className="font-semibold text-purple-900">✨ AI Proposal Generator</h3>
+                        <p className="text-sm text-purple-700">Let AI help you write a professional proposal</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowAIHelper(!showAIHelper)}
+                        className="text-sm text-purple-600 hover:text-purple-800 font-medium"
+                    >
+                        {showAIHelper ? "Hide" : "Show"}
+                    </button>
+                </div>
+                
+                {showAIHelper && (
+                    <div className="space-y-3">
+                        <textarea
+                            value={aiPrompt}
+                            onChange={(e) => setAiPrompt(e.target.value)}
+                            placeholder="Describe what you want to propose... e.g., 'Website redesign for an e-commerce company, including mobile optimization and SEO improvements'"
+                            rows={3}
+                            className="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"
+                        />
+                        <button
+                            type="button"
+                            onClick={generateWithAI}
+                            disabled={generatingAI || !aiPrompt.trim()}
+                            className="w-full bg-purple-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors text-sm"
+                        >
+                            {generatingAI ? "Generating..." : "Generate Proposal Content"}
+                        </button>
+                    </div>
+                )}
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Company Selection */}
