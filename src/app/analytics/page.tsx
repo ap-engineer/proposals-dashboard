@@ -1,22 +1,22 @@
 "use client"
 import useSWR from "swr"
 import Link from "next/link"
-import { PageHeader } from "@/components/PageHeader"
-import { Card, CardContent, CardTitle } from "@/components/ui"
-import { LoadingSpinner } from "@/components/LoadingSpinner"
-import { ErrorMessage } from "@/components/ErrorMessage"
+import {PageHeader} from "@/components/PageHeader"
+import {Card, CardContent, CardTitle} from "@/components/ui"
+import {LoadingSpinner} from "@/components/LoadingSpinner"
+import {ErrorMessage} from "@/components/ErrorMessage"
 
 const fetcher = (url: string) => fetch(url).then(r => r.json())
 
 const AnalyticsPage = () => {
-    const { data, error, isLoading } = useSWR("/api/analytics", fetcher, {
+    const {data, error, isLoading} = useSWR("/api/analytics", fetcher, {
         refreshInterval: 30000
     })
 
     if (isLoading) {
         return (
             <main className="container max-w-7xl mx-auto py-8 px-4">
-                <LoadingSpinner />
+                <LoadingSpinner/>
             </main>
         )
     }
@@ -24,7 +24,7 @@ const AnalyticsPage = () => {
     if (error) {
         return (
             <main className="container max-w-7xl mx-auto py-8 px-4">
-                <ErrorMessage message={`Error loading analytics: ${error.message}`} />
+                <ErrorMessage message={`Error loading analytics: ${error.message}`}/>
             </main>
         )
     }
@@ -52,8 +52,19 @@ const AnalyticsPage = () => {
                     <CardContent className="p-6">
                         <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Total Value</h3>
                         <p className="text-4xl font-bold text-green-600 dark:text-green-400">
-                            ${(analytics.totalValue || 0).toLocaleString()}
+                            €{((analytics.totalValue || 0) / 100).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        })}
                         </p>
+                        {analytics.totalValueWithTax !== undefined && analytics.totalValueWithTax > 0 && (
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                Incl. tax: €{((analytics.totalValueWithTax || 0) / 100).toLocaleString('en-US', {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            })}
+                            </p>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -76,7 +87,8 @@ const AnalyticsPage = () => {
                             {analytics.statusDistribution.map((item: any) => (
                                 <div key={item.status}>
                                     <div className="flex justify-between mb-1">
-                                        <span className="text-sm font-medium capitalize text-gray-900 dark:text-gray-100">{item.status}</span>
+                                        <span
+                                            className="text-sm font-medium capitalize text-gray-900 dark:text-gray-100">{item.status}</span>
                                         <span className="text-sm text-gray-600 dark:text-gray-400">
                                             {item.count} ({item.percentage}%)
                                         </span>
@@ -84,7 +96,7 @@ const AnalyticsPage = () => {
                                     <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                                         <div
                                             className="bg-blue-600 dark:bg-blue-500 h-2 rounded-full transition-all"
-                                            style={{ width: `${item.percentage}%` }}
+                                            style={{width: `${item.percentage}%`}}
                                         />
                                     </div>
                                 </div>
@@ -103,15 +115,16 @@ const AnalyticsPage = () => {
                     {analytics.byCompany && Object.keys(analytics.byCompany).length > 0 ? (
                         <div className="space-y-2">
                             {Object.entries(analytics.byCompany).map(([company, count]: [string, any]) => (
-                                <div key={company} className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+                                <div key={company}
+                                     className="flex justify-between py-2 border-b border-gray-100 dark:border-gray-700">
                                     <span className="font-medium text-gray-900 dark:text-gray-100">{company}</span>
                                     <span className="text-gray-600 dark:text-gray-400">{count} proposals</span>
                                 </div>
                             ))}
                         </div>
-                ) : (
-                    <p className="text-gray-500 dark:text-gray-400">No company data available</p>
-                )}
+                    ) : (
+                        <p className="text-gray-500 dark:text-gray-400">No company data available</p>
+                    )}
                 </CardContent>
             </Card>
 
