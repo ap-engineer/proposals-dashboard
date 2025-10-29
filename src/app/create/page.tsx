@@ -1,15 +1,22 @@
 "use client"
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import {useState, useEffect} from "react"
+import {useRouter} from "next/navigation"
 import Link from "next/link"
 import useSWR from "swr"
+import {fetcher, swrConfig} from "@/lib/swrFetcher"
+import {API} from "@/lib/constants"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+interface CompaniesResponse {
+    data: Array<{
+        id: number
+        name: string
+    }>
+}
 
 const CreateProposalPage = () => {
     const router = useRouter()
-    const { data: companiesData } = useSWR("/api/companies", fetcher)
-    
+    const {data: companiesData} = useSWR<CompaniesResponse>(API.COMPANIES, fetcher, swrConfig)
+
     const [formData, setFormData] = useState({
         company_id: "",
         title_md: "",
@@ -18,7 +25,7 @@ const CreateProposalPage = () => {
         recipient_email: "",
         recipient_company_name: ""
     })
-    
+
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState("")
     const [success, setSuccess] = useState<{ uuid: string; url: string } | null>(null)
@@ -30,12 +37,12 @@ const CreateProposalPage = () => {
 
     const generateWithAI = async () => {
         if (!aiPrompt.trim()) return
-        
+
         setGeneratingAI(true)
         try {
-            const response = await fetch("/api/ai/generate-proposal", {
+            const response = await fetch(API.AI_GENERATE_PROPOSAL, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({
                     prompt: aiPrompt,
                     companyName: companies.find((c: any) => c.id === parseInt(formData.company_id))?.name,
@@ -44,7 +51,7 @@ const CreateProposalPage = () => {
             })
 
             const data = await response.json()
-            
+
             if (data.error && data.fallback) {
                 // Use fallback
                 setFormData({
@@ -90,9 +97,9 @@ const CreateProposalPage = () => {
                 if (formData.recipient_company_name) payload.recipient.company_name = formData.recipient_company_name
             }
 
-            const response = await fetch("/api/proposals/create", {
+            const response = await fetch(API.PROPOSAL_CREATE, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             })
 
@@ -103,7 +110,7 @@ const CreateProposalPage = () => {
             }
 
             setSuccess(data.proposal)
-            
+
             // Redirect after 2 seconds
             setTimeout(() => {
                 router.push(`/proposals/${data.proposal.uuid}`)
@@ -132,9 +139,9 @@ const CreateProposalPage = () => {
                     <p className="text-sm text-green-700 mt-1">
                         Redirecting to proposal page...
                     </p>
-                    <a 
-                        href={success.url} 
-                        target="_blank" 
+                    <a
+                        href={success.url}
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm text-blue-600 hover:underline mt-2 inline-block"
                     >
@@ -164,7 +171,7 @@ const CreateProposalPage = () => {
                         {showAIHelper ? "Hide" : "Show"}
                     </button>
                 </div>
-                
+
                 {showAIHelper && (
                     <div className="space-y-3">
                         <textarea
@@ -196,7 +203,7 @@ const CreateProposalPage = () => {
                         id="company_id"
                         required
                         value={formData.company_id}
-                        onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
+                        onChange={(e) => setFormData({...formData, company_id: e.target.value})}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     >
                         <option value="">Select a company</option>
@@ -218,7 +225,7 @@ const CreateProposalPage = () => {
                         id="title_md"
                         required
                         value={formData.title_md}
-                        onChange={(e) => setFormData({ ...formData, title_md: e.target.value })}
+                        onChange={(e) => setFormData({...formData, title_md: e.target.value})}
                         placeholder="e.g., Website Redesign Proposal"
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
@@ -232,7 +239,7 @@ const CreateProposalPage = () => {
                     <textarea
                         id="description_md"
                         value={formData.description_md}
-                        onChange={(e) => setFormData({ ...formData, description_md: e.target.value })}
+                        onChange={(e) => setFormData({...formData, description_md: e.target.value})}
                         placeholder="Enter proposal description in markdown format..."
                         rows={6}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
@@ -242,7 +249,7 @@ const CreateProposalPage = () => {
                 {/* Recipient Information */}
                 <div className="border-t pt-6">
                     <h2 className="text-lg font-semibold mb-4">Recipient Information (Optional)</h2>
-                    
+
                     <div className="space-y-4">
                         <div>
                             <label htmlFor="recipient_name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -252,7 +259,7 @@ const CreateProposalPage = () => {
                                 type="text"
                                 id="recipient_name"
                                 value={formData.recipient_name}
-                                onChange={(e) => setFormData({ ...formData, recipient_name: e.target.value })}
+                                onChange={(e) => setFormData({...formData, recipient_name: e.target.value})}
                                 placeholder="John Doe"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
@@ -266,21 +273,22 @@ const CreateProposalPage = () => {
                                 type="email"
                                 id="recipient_email"
                                 value={formData.recipient_email}
-                                onChange={(e) => setFormData({ ...formData, recipient_email: e.target.value })}
+                                onChange={(e) => setFormData({...formData, recipient_email: e.target.value})}
                                 placeholder="john@example.com"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />
                         </div>
 
                         <div>
-                            <label htmlFor="recipient_company_name" className="block text-sm font-medium text-gray-700 mb-2">
+                            <label htmlFor="recipient_company_name"
+                                   className="block text-sm font-medium text-gray-700 mb-2">
                                 Recipient Company
                             </label>
                             <input
                                 type="text"
                                 id="recipient_company_name"
                                 value={formData.recipient_company_name}
-                                onChange={(e) => setFormData({ ...formData, recipient_company_name: e.target.value })}
+                                onChange={(e) => setFormData({...formData, recipient_company_name: e.target.value})}
                                 placeholder="Acme Corp"
                                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             />

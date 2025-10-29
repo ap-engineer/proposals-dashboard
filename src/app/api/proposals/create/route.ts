@@ -1,15 +1,15 @@
-import { createProposal } from "@/lib/proposales"
-import { NextResponse } from "next/server"
+import {createProposal} from "@/lib/proposales"
+import {NextResponse} from "next/server"
 
 export async function POST(req: Request) {
     try {
         const body = await req.json()
-        
+
         // Validate required fields
         if (!body.company_id || !body.title_md) {
             return NextResponse.json(
-                { error: "company_id and title_md are required" },
-                { status: 400 }
+                {error: "company_id and title_md are required"},
+                {status: 400}
             )
         }
 
@@ -17,6 +17,6 @@ export async function POST(req: Request) {
         return NextResponse.json(response)
     } catch (err: any) {
         console.error("Error creating proposal:", err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({error: err.message}, {status: 500})
     }
 }

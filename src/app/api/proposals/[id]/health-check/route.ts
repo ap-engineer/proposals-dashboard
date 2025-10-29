@@ -1,8 +1,8 @@
-import { getProposal } from "@/lib/proposales"
-import { groq } from "@ai-sdk/groq"
-import { generateText } from "ai"
-import { z } from "zod"
-import { NextResponse } from "next/server"
+import {getProposal} from "@/lib/proposales"
+import {groq} from "@ai-sdk/groq"
+import {generateText} from "ai"
+import {z} from "zod"
+import {NextResponse} from "next/server"
 
 const healthCheckSchema = z.object({
     overallScore: z.number().min(0).max(100).describe("Overall proposal quality score 0-100"),
@@ -20,15 +20,15 @@ const healthCheckSchema = z.object({
 
 export async function POST(
     _: Request,
-    { params }: { params: Promise<{ id: string }> }
+    {params}: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params
+        const {id} = await params
         const response = await getProposal(id)
         const proposal = response.data
 
         if (!proposal) {
-            return NextResponse.json({ error: "Proposal not found" }, { status: 404 })
+            return NextResponse.json({error: "Proposal not found"}, {status: 404})
         }
 
         const groqKey = process.env.GROQ_API_KEY
@@ -37,16 +37,16 @@ export async function POST(
                 error: "Groq API key not configured",
                 fallback: {
                     overallScore: 50,
-                    scores: { clarity: 50, completeness: 50, professionalism: 50, persuasiveness: 50 },
+                    scores: {clarity: 50, completeness: 50, professionalism: 50, persuasiveness: 50},
                     strengths: ["Proposal exists", "Has basic structure"],
                     weaknesses: ["Add OpenAI API key to get detailed analysis"],
                     recommendations: ["Get free Groq API key at https://console.groq.com", "Add GROQ_API_KEY to .env", "Try the health check again"],
                     verdict: "needs_work" as const
                 }
-            }, { status: 200 })
+            }, {status: 200})
         }
 
-        const { text } = await generateText({
+        const {text} = await generateText({
             model: groq("llama-3.3-70b-versatile"),
             prompt: `You are an expert business proposal reviewer. Analyze this proposal and provide a detailed health check.
 
@@ -99,6 +99,6 @@ Respond ONLY with the JSON object, no other text.`,
 
     } catch (err: any) {
         console.error("Error generating health check:", err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({error: err.message}, {status: 500})
     }
 }

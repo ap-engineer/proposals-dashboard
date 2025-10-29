@@ -1,4 +1,4 @@
-import { ReactNode, ButtonHTMLAttributes } from "react"
+import {ReactNode, ButtonHTMLAttributes} from "react"
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     children: ReactNode
@@ -21,14 +21,14 @@ const sizeStyles = {
     lg: "px-6 py-3 text-base"
 }
 
-export const Button = ({ 
-    children, 
-    variant = "primary", 
-    size = "md",
-    className = "",
-    disabled,
-    ...props 
-}: ButtonProps) => {
+export const Button = ({
+                           children,
+                           variant = "primary",
+                           size = "md",
+                           className = "",
+                           disabled,
+                           ...props
+                       }: ButtonProps) => {
     return (
         <button
             className={`

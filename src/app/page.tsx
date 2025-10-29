@@ -1,13 +1,15 @@
 "use client"
 import useSWR from "swr"
 import Link from "next/link"
+import {fetcher, swrConfig} from "@/lib/swrFetcher"
+import {API} from "@/lib/constants"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+interface ProposalsResponse {
+    data: any
+}
 
 const Page = () => {
-    const {data, error, isLoading} = useSWR("/api/proposals/list", fetcher, {
-        revalidateOnFocus: true
-    })
+    const {data, error, isLoading} = useSWR<ProposalsResponse>(API.PROPOSALS_LIST, fetcher, swrConfig)
 
     if (isLoading) {
         return (

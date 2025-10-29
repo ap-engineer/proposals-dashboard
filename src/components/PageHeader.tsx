@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ReactNode } from "react"
+import {ReactNode} from "react"
 
 interface PageHeaderProps {
     title: string
@@ -8,7 +8,7 @@ interface PageHeaderProps {
     actions?: ReactNode
 }
 
-export const PageHeader = ({ title, description, backLink, actions }: PageHeaderProps) => {
+export const PageHeader = ({title, description, backLink, actions}: PageHeaderProps) => {
     return (
         <div className="mb-8">
             {backLink && (
