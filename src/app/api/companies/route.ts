@@ -1,5 +1,5 @@
-import { listCompanies } from "@/lib/proposales"
-import { NextResponse } from "next/server"
+import {listCompanies} from "@/lib/proposales"
+import {NextResponse} from "next/server"
 
 export async function GET() {
     try {
@@ -7,6 +7,6 @@ export async function GET() {
         return NextResponse.json(response)
     } catch (err: any) {
         console.error("Error fetching companies:", err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({error: err.message}, {status: 500})
     }
 }

@@ -1,13 +1,17 @@
 "use client"
-import { useState, useMemo } from "react"
+import {useState, useMemo} from "react"
 import useSWR from "swr"
 import Link from "next/link"
-import { debounce } from "@/lib/utils"
+import {debounce} from "@/lib/utils"
+import {fetcher, swrConfig} from "@/lib/swrFetcher"
+import {API} from "@/lib/constants"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+interface ContentResponse {
+    data: any[]
+}
 
 const ContentLibraryPage = () => {
-    const { data, error, isLoading } = useSWR("/api/content", fetcher)
+    const {data, error, isLoading} = useSWR<ContentResponse>(API.CONTENT, fetcher, swrConfig)
     const [filter, setFilter] = useState<"all" | "active" | "archived">("all")
     const [searchQuery, setSearchQuery] = useState("")
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("")
@@ -63,12 +67,12 @@ const ContentLibraryPage = () => {
 
     // Filter content
     const filteredContent = contentItems.filter((item: any) => {
-        const matchesFilter = 
+        const matchesFilter =
             filter === "all" ? true :
-            filter === "active" ? !item.deactivated_at :
-            item.deactivated_at
+                filter === "active" ? !item.deactivated_at :
+                    item.deactivated_at
 
-        const matchesSearch = debouncedSearchQuery === "" || 
+        const matchesSearch = debouncedSearchQuery === "" ||
             (item.title && JSON.stringify(item.title).toLowerCase().includes(debouncedSearchQuery.toLowerCase())) ||
             (item.description && JSON.stringify(item.description).toLowerCase().includes(debouncedSearchQuery.toLowerCase()))
 
@@ -80,17 +84,17 @@ const ContentLibraryPage = () => {
 
     const generateContent = async () => {
         if (!generatorPrompt.trim()) return
-        
+
         setGenerating(true)
         try {
-            const response = await fetch("/api/ai/generate-content", {
+            const response = await fetch(API.AI_GENERATE_CONTENT, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: generatorPrompt })
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({prompt: generatorPrompt})
             })
 
             const data = await response.json()
-            
+
             if (data.error && data.fallback) {
                 setGeneratedContent(data.fallback)
                 // Prefill the create form
@@ -121,7 +125,7 @@ const ContentLibraryPage = () => {
         // Detect the first available language from title
         const availableLanguages = typeof item.title === "object" ? Object.keys(item.title) : ["en"]
         const defaultLanguage = availableLanguages[0] || "en"
-        
+
         setEditingItem({
             ...item,
             language: defaultLanguage
@@ -138,10 +142,10 @@ const ContentLibraryPage = () => {
 
         try {
             const language = editingItem.language || "en"
-            const title = typeof editingItem.title === "string" 
-                ? editingItem.title 
+            const title = typeof editingItem.title === "string"
+                ? editingItem.title
                 : editingItem.title?.[language] || ""
-            
+
             const description = typeof editingItem.description === "string"
                 ? editingItem.description
                 : editingItem.description?.[language] || ""
@@ -162,9 +166,9 @@ const ContentLibraryPage = () => {
                 payload.description = description.trim()
             }
 
-            const response = await fetch("/api/content/update", {
+            const response = await fetch(API.CONTENT_UPDATE, {
                 method: "PUT",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             })
 
@@ -175,7 +179,7 @@ const ContentLibraryPage = () => {
             }
 
             setUpdateSuccess(true)
-            
+
             // Refresh content list
             setTimeout(() => {
                 setEditingItem(null)
@@ -197,10 +201,10 @@ const ContentLibraryPage = () => {
 
         try {
             // Get company_id from companies data
-            const companiesResponse = await fetch("/api/companies")
+            const companiesResponse = await fetch(API.COMPANIES)
             const companiesData = await companiesResponse.json()
             const companies = companiesData?.data || []
-            
+
             if (companies.length === 0) {
                 throw new Error("No companies found. Please create a company first.")
             }
@@ -219,9 +223,9 @@ const ContentLibraryPage = () => {
                 }]
             }
 
-            const response = await fetch("/api/content/create", {
+            const response = await fetch(API.CONTENT_CREATE, {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {"Content-Type": "application/json"},
                 body: JSON.stringify(payload)
             })
 
@@ -232,8 +236,8 @@ const ContentLibraryPage = () => {
             }
 
             setCreateSuccess(true)
-            setFormData({ title: "", description: "", imageUrl: "", language: "en" })
-            
+            setFormData({title: "", description: "", imageUrl: "", language: "en"})
+
             // Refresh content list
             setTimeout(() => {
                 window.location.reload()
@@ -300,7 +304,7 @@ const ContentLibraryPage = () => {
                                 type="text"
                                 required
                                 value={formData.title}
-                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                onChange={(e) => setFormData({...formData, title: e.target.value})}
                                 placeholder="e.g., Professional Website Design"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                             />
@@ -312,7 +316,7 @@ const ContentLibraryPage = () => {
                             </label>
                             <textarea
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                onChange={(e) => setFormData({...formData, description: e.target.value})}
                                 placeholder="Detailed description of your product or service..."
                                 rows={3}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
@@ -326,7 +330,7 @@ const ContentLibraryPage = () => {
                             <input
                                 type="url"
                                 value={formData.imageUrl}
-                                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                                onChange={(e) => setFormData({...formData, imageUrl: e.target.value})}
                                 placeholder="https://example.com/image.jpg"
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                             />
@@ -339,7 +343,7 @@ const ContentLibraryPage = () => {
                             </label>
                             <select
                                 value={formData.language}
-                                onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+                                onChange={(e) => setFormData({...formData, language: e.target.value})}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                             >
                                 <option value="en">English</option>
@@ -376,7 +380,7 @@ const ContentLibraryPage = () => {
                         {showGenerator ? "Hide" : "Show"}
                     </button>
                 </div>
-                
+
                 {showGenerator && (
                     <div className="space-y-3">
                         <textarea
@@ -394,7 +398,7 @@ const ContentLibraryPage = () => {
                         >
                             {generating ? "Generating..." : "Generate Content Item"}
                         </button>
-                        
+
                         {generatedContent && (
                             <div className="mt-4 p-4 bg-white rounded-lg border border-green-300">
                                 <h4 className="font-semibold text-lg mb-2">{generatedContent.title}</h4>
@@ -492,7 +496,8 @@ const ContentLibraryPage = () => {
 
             {/* Content Grid */}
             {contentItems.length === 0 ? (
-                <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-dashed border-blue-300">
+                <div
+                    className="text-center py-16 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-dashed border-blue-300">
                     <div className="max-w-md mx-auto">
                         <svg
                             className="w-20 h-20 mx-auto mb-4 text-blue-400"
@@ -514,7 +519,9 @@ const ContentLibraryPage = () => {
                         <div className="bg-white rounded-lg p-4 text-left mb-4">
                             <p className="text-sm font-semibold text-gray-700 mb-2">To add content:</p>
                             <ol className="text-sm text-gray-600 space-y-1 list-decimal list-inside">
-                                <li>Go to <a href="https://secure.proposales.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Proposales Dashboard</a></li>
+                                <li>Go to <a href="https://secure.proposales.com" target="_blank"
+                                             rel="noopener noreferrer" className="text-blue-600 hover:underline">Proposales
+                                    Dashboard</a></li>
                                 <li>Navigate to your Content or Products section</li>
                                 <li>Add products, services, or content blocks</li>
                                 <li>Refresh this page to see them here</li>
@@ -542,7 +549,8 @@ const ContentLibraryPage = () => {
                             }`}
                         >
                             {/* Image Placeholder - Images not returned by API */}
-                            <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
+                            <div
+                                className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center">
                                 <svg
                                     className="w-16 h-16 text-gray-400"
                                     fill="none"
@@ -632,14 +640,16 @@ const ContentLibraryPage = () => {
                                     className="text-gray-500 hover:text-gray-700"
                                 >
                                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                              d="M6 18L18 6M6 6l12 12"/>
                                     </svg>
                                 </button>
                             </div>
 
                             {updateSuccess && (
                                 <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                                    <p className="text-green-800 text-sm">✓ Content updated successfully! Refreshing...</p>
+                                    <p className="text-green-800 text-sm">✓ Content updated successfully!
+                                        Refreshing...</p>
                                 </div>
                             )}
 
@@ -667,7 +677,7 @@ const ContentLibraryPage = () => {
                                     </label>
                                     <select
                                         value={editingItem.language || "en"}
-                                        onChange={(e) => setEditingItem({ ...editingItem, language: e.target.value })}
+                                        onChange={(e) => setEditingItem({...editingItem, language: e.target.value})}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     >
                                         <option value="en">English</option>
@@ -699,7 +709,7 @@ const ContentLibraryPage = () => {
                                                 ...editingItem,
                                                 title: typeof editingItem.title === "string"
                                                     ? e.target.value
-                                                    : { ...editingItem.title, [lang]: e.target.value }
+                                                    : {...editingItem.title, [lang]: e.target.value}
                                             })
                                         }}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -722,7 +732,7 @@ const ContentLibraryPage = () => {
                                                 ...editingItem,
                                                 description: typeof editingItem.description === "string"
                                                     ? e.target.value
-                                                    : { ...editingItem.description, [lang]: e.target.value }
+                                                    : {...editingItem.description, [lang]: e.target.value}
                                             })
                                         }}
                                         rows={4}

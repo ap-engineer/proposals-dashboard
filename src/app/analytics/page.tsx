@@ -5,12 +5,32 @@ import {PageHeader} from "@/components/PageHeader"
 import {Card, CardContent, CardTitle} from "@/components/ui"
 import {LoadingSpinner} from "@/components/LoadingSpinner"
 import {ErrorMessage} from "@/components/ErrorMessage"
+import {fetcher} from "@/lib/swrFetcher"
+import {API} from "@/lib/constants"
 
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+interface Analytics {
+    total: number
+    byStatus: Record<string, number>
+    byCompany: Record<string, number>
+    totalValue: number
+    totalValueWithTax: number
+    recentProposals: Array<{
+        uuid: string
+        title?: string
+        status?: string
+        created_at?: number
+    }>
+    statusDistribution: Array<{
+        status: string
+        count: number
+        percentage: number
+    }>
+}
 
 const AnalyticsPage = () => {
-    const {data, error, isLoading} = useSWR("/api/analytics", fetcher, {
-        refreshInterval: 30000
+    const {data, error, isLoading} = useSWR<Analytics>(API.ANALYTICS, fetcher, {
+        refreshInterval: 30000,
+        revalidateOnFocus: true,
     })
 
     if (isLoading) {
@@ -29,7 +49,15 @@ const AnalyticsPage = () => {
         )
     }
 
-    const analytics = data || {}
+    if (!data) {
+        return (
+            <main className="container max-w-7xl mx-auto py-8 px-4">
+                <ErrorMessage message="No analytics data available"/>
+            </main>
+        )
+    }
+
+    const analytics = data
 
     return (
         <main className="container max-w-7xl mx-auto py-8 px-4">
@@ -44,7 +72,7 @@ const AnalyticsPage = () => {
                 <Card>
                     <CardContent className="p-6">
                         <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Total Proposals</h3>
-                        <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">{analytics.total || 0}</p>
+                        <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">{analytics.total}</p>
                     </CardContent>
                 </Card>
 
@@ -52,14 +80,14 @@ const AnalyticsPage = () => {
                     <CardContent className="p-6">
                         <h3 className="text-gray-600 dark:text-gray-400 text-sm font-medium mb-2">Total Value</h3>
                         <p className="text-4xl font-bold text-green-600 dark:text-green-400">
-                            €{((analytics.totalValue || 0) / 100).toLocaleString('en-US', {
+                            €{(analytics.totalValue / 100).toLocaleString('en-US', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2
                         })}
                         </p>
-                        {analytics.totalValueWithTax !== undefined && analytics.totalValueWithTax > 0 && (
+                        {analytics.totalValueWithTax > 0 && (
                             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                Incl. tax: €{((analytics.totalValueWithTax || 0) / 100).toLocaleString('en-US', {
+                                Incl. tax: €{(analytics.totalValueWithTax / 100).toLocaleString('en-US', {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2
                             })}

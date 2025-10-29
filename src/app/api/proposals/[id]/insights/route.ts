@@ -1,7 +1,7 @@
-import { getProposal } from "@/lib/proposales"
-import { groq } from "@ai-sdk/groq"
-import { streamText } from "ai"
-import { z } from "zod"
+import {getProposal} from "@/lib/proposales"
+import {groq} from "@ai-sdk/groq"
+import {streamText} from "ai"
+import {z} from "zod"
 
 // Define structured output schema using Zod
 const insightsSchema = z.object({
@@ -14,23 +14,23 @@ const insightsSchema = z.object({
 
 export async function POST(
     _: Request,
-    { params }: { params: Promise<{ id: string }> }
+    {params}: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { id } = await params
+        const {id} = await params
         const response = await getProposal(id)
         const proposal = response.data
 
         if (!proposal) {
             return new Response(
-                JSON.stringify({ error: "Proposal not found" }),
-                { status: 404, headers: { "Content-Type": "application/json" } }
+                JSON.stringify({error: "Proposal not found"}),
+                {status: 404, headers: {"Content-Type": "application/json"}}
             )
         }
 
         // Check for Groq API key
         const groqKey = process.env.GROQ_API_KEY
-        
+
         if (!groqKey) {
             // No API key - return fallback with instructions
             return new Response(
@@ -51,7 +51,7 @@ export async function POST(
                         confidence: 0
                     }
                 }),
-                { status: 200, headers: { "Content-Type": "application/json" } }
+                {status: 200, headers: {"Content-Type": "application/json"}}
             )
         }
 
@@ -96,8 +96,8 @@ Respond ONLY with the JSON object, no other text.`,
     } catch (err: any) {
         console.error("Error generating insights:", err)
         return new Response(
-            JSON.stringify({ error: err.message }),
-            { status: 500, headers: { "Content-Type": "application/json" } }
+            JSON.stringify({error: err.message}),
+            {status: 500, headers: {"Content-Type": "application/json"}}
         )
     }
 }

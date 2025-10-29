@@ -1,7 +1,7 @@
-import { groq } from "@ai-sdk/groq"
-import { generateText } from "ai"
-import { z } from "zod"
-import { NextResponse } from "next/server"
+import {groq} from "@ai-sdk/groq"
+import {generateText} from "ai"
+import {z} from "zod"
+import {NextResponse} from "next/server"
 
 const proposalSchema = z.object({
     title: z.string().describe("A compelling proposal title"),
@@ -12,10 +12,10 @@ const proposalSchema = z.object({
 
 export async function POST(req: Request) {
     try {
-        const { prompt, companyName, recipientName } = await req.json()
+        const {prompt, companyName, recipientName} = await req.json()
 
         if (!prompt) {
-            return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
+            return NextResponse.json({error: "Prompt is required"}, {status: 400})
         }
 
         const groqKey = process.env.GROQ_API_KEY
@@ -28,10 +28,10 @@ export async function POST(req: Request) {
                     keyPoints: ["Get free Groq API key", "Add to .env file", "Enjoy AI features"],
                     estimatedValue: 0
                 }
-            }, { status: 200 })
+            }, {status: 200})
         }
 
-        const { text } = await generateText({
+        const {text} = await generateText({
             model: groq("llama-3.3-70b-versatile"),
             prompt: `You are an expert business proposal writer. Generate a professional proposal based on this request.
 
@@ -65,6 +65,6 @@ Respond ONLY with the JSON object, no other text.`,
 
     } catch (err: any) {
         console.error("Error generating proposal:", err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({error: err.message}, {status: 500})
     }
 }

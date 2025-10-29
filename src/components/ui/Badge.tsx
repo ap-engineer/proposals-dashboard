@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import {ReactNode} from "react"
 
 interface BadgeProps {
     children: ReactNode
@@ -14,7 +14,7 @@ const variantStyles = {
     info: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300"
 }
 
-export const Badge = ({ children, variant = "default", className = "" }: BadgeProps) => {
+export const Badge = ({children, variant = "default", className = ""}: BadgeProps) => {
     return (
         <span className={`px-2 py-1 text-xs rounded-full font-medium ${variantStyles[variant]} ${className}`}>
             {children}

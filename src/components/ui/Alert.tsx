@@ -1,4 +1,4 @@
-import { ReactNode } from "react"
+import {ReactNode} from "react"
 
 interface AlertProps {
     children: ReactNode
@@ -13,7 +13,7 @@ const variantStyles = {
     error: "bg-red-50 border-red-200 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300"
 }
 
-export const Alert = ({ children, variant = "info", className = "" }: AlertProps) => {
+export const Alert = ({children, variant = "info", className = ""}: AlertProps) => {
     return (
         <div className={`p-3 border rounded-lg ${variantStyles[variant]} ${className}`}>
             {children}

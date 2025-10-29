@@ -1,5 +1,5 @@
-import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import {NextResponse} from "next/server";
+import {revalidatePath} from "next/cache";
 
 // Webhook event types from Proposales
 // Based on: https://docs.proposales.com/webhooks/*
@@ -28,7 +28,7 @@ const recentEvents: Array<{
 export async function POST(req: Request) {
     try {
         const event: WebhookEvent = await req.json();
-        
+
         console.log("[Webhook] Received event:", {
             type: event.event,
             timestamp: event.timestamp || Date.now(),
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
 
             default:
                 console.log("[Webhook] Unhandled event type:", event.event);
-                // Log for future implementation
+            // Log for future implementation
         }
 
         // Store event in memory (in production, you'd store in a database)
@@ -136,18 +136,18 @@ export async function POST(req: Request) {
 
         console.log("[Webhook] Event processed:", eventLog.id);
 
-        return NextResponse.json({ 
-            ok: true, 
+        return NextResponse.json({
+            ok: true,
             eventId: eventLog.id,
             message: "Webhook processed successfully",
             event: event.event
         });
     } catch (err: any) {
         console.error("[Webhook] Error:", err);
-        return NextResponse.json({ 
+        return NextResponse.json({
             error: err.message,
-            ok: false 
-        }, { status: 400 });
+            ok: false
+        }, {status: 400});
     }
 }
 

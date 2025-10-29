@@ -3,8 +3,8 @@ import {useState} from "react"
 import {useParams} from "next/navigation"
 import useSWR from "swr"
 import Link from "next/link"
-
-const fetcher = (url: string) => fetch(url).then(r => r.json())
+import {fetcher, swrConfig} from "@/lib/swrFetcher"
+import {API} from "@/lib/constants"
 
 type Insights = {
     summary: string
@@ -14,9 +14,13 @@ type Insights = {
     confidence: number
 }
 
+interface ProposalResponse {
+    data: any
+}
+
 const ProposalDetail = () => {
     const {id} = useParams()
-    const {data, error, isLoading} = useSWR(`/api/proposals/${id}`, fetcher)
+    const {data, error, isLoading} = useSWR<ProposalResponse>(API.PROPOSAL_DETAIL(id as string), fetcher, swrConfig)
     const [showInsights, setShowInsights] = useState(false)
     const [insights, setInsights] = useState<Partial<Insights> | null>(null)
     const [loadingInsights, setLoadingInsights] = useState(false)
@@ -32,7 +36,7 @@ const ProposalDetail = () => {
         setInsights(null)
 
         try {
-            const response = await fetch(`/api/proposals/${id}/insights`, {
+            const response = await fetch(API.PROPOSAL_INSIGHTS(id as string), {
                 method: "POST"
             })
 
@@ -106,7 +110,7 @@ const ProposalDetail = () => {
         setHealthError("")
 
         try {
-            const response = await fetch(`/api/proposals/${id}/health-check`, {
+            const response = await fetch(API.PROPOSAL_HEALTH(id as string), {
                 method: "POST"
             })
 

@@ -1,17 +1,19 @@
 "use client"
-import { useState, useEffect } from "react"
-import { PageHeader } from "@/components/PageHeader"
-import { Card, CardContent, CardTitle, Badge } from "@/components/ui"
-import { LoadingSpinner } from "@/components/LoadingSpinner"
+import {useState, useEffect} from "react"
+import {PageHeader} from "@/components/PageHeader"
+import {Card, CardContent, CardTitle, Badge} from "@/components/ui"
+import {LoadingSpinner} from "@/components/LoadingSpinner"
+import {API} from "@/lib/constants"
 
 const WebhooksPage = () => {
     const [webhookData, setWebhookData] = useState<any>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        // Fetch webhook status/info
         const fetchWebhookStatus = async () => {
             try {
-                const response = await fetch("/api/webhook")
+                const response = await fetch(API.WEBHOOK)
                 const data = await response.json()
                 setWebhookData(data)
             } catch (err) {
@@ -30,7 +32,7 @@ const WebhooksPage = () => {
     if (loading) {
         return (
             <main className="container max-w-7xl mx-auto py-8 px-4">
-                <LoadingSpinner />
+                <LoadingSpinner/>
             </main>
         )
     }
@@ -126,7 +128,8 @@ const WebhooksPage = () => {
 
             {/* Documentation Links */}
             {webhookData?.documentation && (
-                <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <div
+                    className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
                     <h3 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">
                         Documentation
                     </h3>
